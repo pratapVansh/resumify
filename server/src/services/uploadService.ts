@@ -1,5 +1,6 @@
 import cloudinary from '../config/cloudinary.js';
 import { AppError } from '../utils/AppError.js';
+import { Readable } from 'stream';
 
 interface UploadResult {
   url: string;
@@ -10,45 +11,56 @@ interface UploadResult {
   resourceType: string;
 }
 
+interface UploadOptions {
+  resourceType?: 'image' | 'raw' | 'video' | 'auto';
+  publicId?: string;
+  format?: string;
+  transformation?: any;
+}
+
 /**
- * Upload Buffer to Cloudinary using Base64 Data URI (NO STREAMS)
- * - Correct MIME handling
- * - Reliable for PDFs and Images
+ * Upload Buffer to Cloudinary using upload_stream
+ * - Converts Buffer to Readable stream
+ * - Pipes to Cloudinary upload_stream
+ * - Returns Promise with upload result
  */
-const uploadBufferBase64 = async (
+const uploadBufferStream = async (
   fileBuffer: Buffer,
   folder: string,
-  options: {
-    resourceType?: 'image' | 'raw' | 'video' | 'auto';
-    publicId?: string;
-    format?: string;
-    transformation?: any;
-  }
+  options: UploadOptions
 ): Promise<UploadResult> => {
-  try {
-    const base64 = fileBuffer.toString('base64');
-    const dataUri = `data:application/pdf;base64,${base64}`;
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: `resumify/${folder}`,
+        resource_type: options.resourceType || 'auto',
+        public_id: options.publicId,
+        format: options.format,
+        transformation: options.transformation,
+      },
+      (error, result) => {
+        if (error) {
+          console.error('❌ Cloudinary upload_stream error:', error);
+          reject(new AppError('Failed to upload file to Cloudinary', 500));
+        } else if (result) {
+          resolve({
+            url: result.secure_url,
+            publicId: result.public_id,
+            width: result.width,
+            height: result.height,
+            format: result.format,
+            resourceType: result.resource_type,
+          });
+        } else {
+          reject(new AppError('Upload failed: No result returned', 500));
+        }
+      }
+    );
 
-    const result = await cloudinary.uploader.upload(dataUri, {
-      folder: `resumify/${folder}`,
-      resource_type: options.resourceType || 'auto',
-      public_id: options.publicId,
-      format: options.format,
-      transformation: options.transformation,
-    });
-
-    return {
-      url: result.secure_url,
-      publicId: result.public_id,
-      width: result.width,
-      height: result.height,
-      format: result.format,
-      resourceType: result.resource_type,
-    };
-  } catch (error) {
-    console.error('❌ Cloudinary upload error:', error);
-    throw new AppError('Failed to upload file to Cloudinary', 500);
-  }
+    // Convert buffer to readable stream and pipe to Cloudinary
+    const bufferStream = Readable.from(fileBuffer);
+    bufferStream.pipe(uploadStream);
+  });
 };
 
 /**
@@ -56,13 +68,11 @@ const uploadBufferBase64 = async (
  */
 export const uploadProfilePhoto = async (
   fileBuffer: Buffer,
-  userId: string,
-  mimeType: string
+  userId: string
 ): Promise<UploadResult> => {
-  return uploadBufferBase64(fileBuffer, 'profile-photos', {
+  return uploadBufferStream(fileBuffer, 'profile-photos', {
     resourceType: 'image',
     publicId: `user-${userId}-${Date.now()}`,
-    mimeType, // 🔥 image/jpeg, image/png, etc.
     transformation: {
       width: 400,
       height: 400,
@@ -77,10 +87,11 @@ export const uploadProfilePhoto = async (
 /**
  * Upload resume PDF with preview + inline viewing
  * 
- * CRITICAL: Upload as 'image' type, NOT 'raw'
- * - Enables PDF page transformations (JPG preview)
+ * CRITICAL: Upload as 'image' type with format: 'pdf'
+ * - resource_type: "image" enables PDF page transformations
+ * - format: "pdf" explicitly sets the file format
+ * - Enables JPG preview generation from page 1
  * - Enables inline viewing in browser
- * - Still allows download
  */
 export const uploadResumeFile = async (
   fileBuffer: Buffer,
@@ -98,15 +109,18 @@ export const uploadResumeFile = async (
   console.log('📁 Uploading PDF to folder:', folder);
   console.log('📄 Public ID:', publicId);
 
-  // Upload PDF as IMAGE type (enables transformations)
-  const uploadResult = await uploadBufferBase64(fileBuffer, folder, {
-    resourceType: 'image',  // MUST be 'image' for PDF transformations
+  // Upload PDF using upload_stream
+  // - resource_type: "image" for PDF transformations
+  // - format: "pdf" to explicitly set format
+  const uploadResult = await uploadBufferStream(fileBuffer, folder, {
+    resourceType: 'image',
+    format: 'pdf',
     publicId,
   });
 
   console.log('✅ PDF uploaded:', uploadResult.url);
 
-  // Generate JPG preview from page 1
+  // Generate JPG preview from page 1 using Cloudinary transformations
   const previewUrl = cloudinary.url(uploadResult.publicId, {
     resource_type: 'image',
     format: 'jpg',
@@ -119,16 +133,16 @@ export const uploadResumeFile = async (
 
   console.log('🖼️ Preview URL:', previewUrl);
 
-  // Use secure_url for inline viewing
+  // secure_url for inline PDF viewing
   const viewPdfUrl = uploadResult.url;
 
   console.log('👁️ View URL:', viewPdfUrl);
 
   return {
-    url: uploadResult.url,      // Download/view URL
+    url: uploadResult.url,
     publicId: uploadResult.publicId,
-    previewUrl,                 // JPG preview of page 1
-    viewPdfUrl,                 // PDF inline view
+    previewUrl,
+    viewPdfUrl,
   };
 };
 

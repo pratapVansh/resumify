@@ -9,6 +9,7 @@ import resumeRoutes from './resumeRoutes.js';
 import aiRoutes from './aiRoutes.js';
 import uploadRoutes from './uploadRoutes.js';
 import pdfRoutes from './pdfRoutes.js';
+import userRoutes from './userRoutes.js';
 
 const router = express.Router();
 
@@ -31,5 +32,6 @@ router.use('/resumes', resumeRoutes);
 router.use('/ai', aiRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/pdf', pdfRoutes);
+router.use('/users', userRoutes);
 
 export default router;

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slices/authSlice';
 import { FileText, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
 import { getInitials } from '@/utils/helpers';
+import { getUserProfile } from '@/services/userService';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,10 +12,24 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<string | undefined>();
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
+
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const profile = await getUserProfile();
+      setProfilePhoto(profile.profilePhoto);
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+    }
+  };
 
   const handleLogout = async () => {
     await dispatch(logout());
@@ -83,8 +98,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
           {/* User profile */}
           <div className="p-4 border-t border-gray-200">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-semibold">
-                {getInitials(user?.firstName, user?.lastName)}
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold overflow-hidden ring-2 ring-gray-200">
+                {profilePhoto ? (
+                  <img 
+                    src={profilePhoto} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{getInitials(user?.firstName, user?.lastName)}</span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">

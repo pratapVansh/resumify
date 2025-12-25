@@ -16,6 +16,8 @@ export interface IUser extends Document {
   lastName?: string;
   googleId?: string;
   avatar?: string;
+  profilePhoto?: string;
+  profilePhotoPublicId?: string;
   role: 'user' | 'admin';
   isEmailVerified: boolean;
   refreshTokens: string[];
@@ -66,6 +68,12 @@ const userSchema = new Schema<IUser>(
       sparse: true, // Allows multiple null values
     },
     avatar: {
+      type: String,
+    },
+    profilePhoto: {
+      type: String,
+    },
+    profilePhotoPublicId: {
       type: String,
     },
     role: {

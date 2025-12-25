@@ -1,23 +1,41 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchResumes, deleteResume, duplicateResume } from '@/store/slices/resumeSlice';
 import { formatDate } from '@/utils/helpers';
-import { Plus, FileText, Copy, Trash2, Eye, EyeOff, ExternalLink, Download, Edit } from 'lucide-react';
+import { Plus, FileText, Copy, Trash2, Eye, EyeOff, ExternalLink, Download, Edit, User } from 'lucide-react';
 import MainLayout from '@/components/layout/MainLayout';
 import { FadeIn, SlideIn, StaggerChildren } from '@/components/common/Animations';
 import { SkeletonCard } from '@/components/common/Skeleton';
 import { downloadResumePDF, triggerDownload } from '@/services/uploadService';
+import ProfilePhotoUpload from '@/components/profile/ProfilePhotoUpload';
+import { getUserProfile } from '@/services/userService';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { resumes, isLoading } = useAppSelector((state) => state.resume);
   const { user } = useAppSelector((state) => state.auth);
+  const [profilePhoto, setProfilePhoto] = useState<string | undefined>();
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     dispatch(fetchResumes());
+    loadUserProfile();
   }, [dispatch]);
+
+  const loadUserProfile = async () => {
+    try {
+      const profile = await getUserProfile();
+      setProfilePhoto(profile.profilePhoto);
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+    }
+  };
+
+  const handlePhotoUpdate = (newPhotoUrl: string) => {
+    setProfilePhoto(newPhotoUrl);
+  };
 
   const handleCreateResume = () => {
     navigate('/resumes/new');
@@ -94,15 +112,42 @@ export default function DashboardPage() {
   return (
     <MainLayout>
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header with Profile Section */}
         <FadeIn>
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome back, {user?.firstName || 'there'}! 👋
-            </h1>
-            <p className="text-gray-600">Manage your resumes and create new ones</p>
+          <div className="mb-8 flex items-start justify-between">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Welcome back, {user?.firstName || 'there'}! 👋
+              </h1>
+              <p className="text-gray-600">Manage your resumes and create new ones</p>
+            </div>
+            
+            {/* Profile Section Toggle */}
+            <button
+              onClick={() => setShowProfile(!showProfile)}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <User className="w-5 h-5 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">Profile</span>
+            </button>
           </div>
         </FadeIn>
+
+        {/* Profile Photo Upload Section */}
+        {showProfile && (
+          <FadeIn>
+            <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Profile Settings</h2>
+              <div className="flex flex-col items-center">
+                <ProfilePhotoUpload
+                  currentPhotoUrl={profilePhoto}
+                  userName={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'User'}
+                  onPhotoUpdate={handlePhotoUpdate}
+                />
+              </div>
+            </div>
+          </FadeIn>
+        )}
 
         {/* Stats */}
         <StaggerChildren>
