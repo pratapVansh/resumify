@@ -58,6 +58,17 @@ const projectSchema = z.object({
   highlights: z.array(z.string()).optional(),
 });
 
+const courseworkSchema = z.object({
+  _id: z.string().optional(),
+  name: z.string().min(1, 'Coursework name is required'),
+});
+
+const technicalSkillCategorySchema = z.object({
+  _id: z.string().optional(),
+  category: z.string().min(1, 'Category name is required'),
+  items: z.array(z.string()).min(1, 'At least one item is required'),
+});
+
 export const resumeSchema = z.object({
   title: z.string().min(1, 'Resume title is required'),
   personalInfo: personalInfoSchema,
@@ -65,13 +76,17 @@ export const resumeSchema = z.object({
   experience: z.array(experienceSchema),
   education: z.array(educationSchema),
   projects: z.array(projectSchema),
+  coursework: z.array(courseworkSchema).optional(),
+  technicalSkills: z.array(technicalSkillCategorySchema).optional(),
   skills: z.array(z.string()),
   languages: z.array(z.string()).optional(),
+  achievements: z.array(z.string()).optional(),
   certifications: z.array(z.string()).optional(),
   visibility: z.enum(['private', 'public']).optional(),
   templateSettings: z
     .object({
-      template: z.enum(['modern', 'classic', 'minimal', 'creative']),
+      template: z.enum(['modern', 'classic', 'minimal', 'creative', 'professional', 'executive', 'compact']),
+      colorTheme: z.enum(['blue', 'green', 'red', 'purple', 'orange', 'teal', 'gray', 'black', 'maroon']),
       primaryColor: z.string(),
       fontSize: z.enum(['small', 'medium', 'large']),
       spacing: z.enum(['compact', 'normal', 'spacious']),

@@ -221,8 +221,13 @@ export const validateCreateResume = [
 
   body('templateSettings.template')
     .optional()
-    .isIn(['modern', 'classic', 'minimal', 'creative'])
+    .isIn(['modern', 'classic', 'minimal', 'creative', 'professional', 'executive', 'compact'])
     .withMessage('Invalid template type'),
+
+  body('templateSettings.colorTheme')
+    .optional()
+    .isIn(['blue', 'green', 'red', 'purple', 'orange', 'teal', 'gray', 'black', 'maroon'])
+    .withMessage('Invalid color theme'),
 
   body('templateSettings.primaryColor')
     .optional()
@@ -340,8 +345,13 @@ export const validateUpdateResume = [
 
   body('templateSettings.template')
     .optional()
-    .isIn(['modern', 'classic', 'minimal', 'creative'])
+    .isIn(['modern', 'classic', 'minimal', 'creative', 'professional', 'executive', 'compact'])
     .withMessage('Invalid template type'),
+
+  body('templateSettings.colorTheme')
+    .optional()
+    .isIn(['blue', 'green', 'red', 'purple', 'orange', 'teal', 'gray', 'black', 'maroon'])
+    .withMessage('Invalid color theme'),
 
   body('templateSettings.primaryColor')
     .optional()

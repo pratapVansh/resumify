@@ -86,8 +86,20 @@ export interface Project {
   highlights?: string[];
 }
 
+export interface Coursework {
+  _id?: string;
+  name: string;
+}
+
+export interface TechnicalSkillCategory {
+  _id?: string;
+  category: string;
+  items: string[];
+}
+
 export interface TemplateSettings {
-  template: 'modern' | 'classic' | 'minimal' | 'creative';
+  template: 'modern' | 'classic' | 'minimal' | 'creative' | 'professional' | 'executive' | 'compact';
+  colorTheme: 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'teal' | 'gray' | 'black' | 'maroon';
   primaryColor: string;
   fontSize: 'small' | 'medium' | 'large';
   spacing: 'compact' | 'normal' | 'spacious';
@@ -103,8 +115,11 @@ export interface Resume {
   experience: Experience[];
   education: Education[];
   projects: Project[];
+  coursework?: Coursework[];
+  technicalSkills?: TechnicalSkillCategory[];
   skills: string[];
   languages?: string[];
+  achievements?: string[];
   certifications?: string[];
   visibility: 'private' | 'public';
   shareId: string;
@@ -125,8 +140,11 @@ export interface ResumeFormData {
   experience: Experience[];
   education: Education[];
   projects: Project[];
+  coursework?: Coursework[];
+  technicalSkills?: TechnicalSkillCategory[];
   skills: string[];
   languages?: string[];
+  achievements?: string[];
   certifications?: string[];
   visibility?: 'private' | 'public';
   templateSettings?: TemplateSettings;

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { createResume, updateResume, fetchResume } from '@/store/slices/resumeSlice';
+import { createResume, updateResume, fetchResume, updateTemplateSettings } from '@/store/slices/resumeSlice';
 import { resumeSchema } from '@/schemas/resumeSchema';
 import { ResumeFormData } from '@/types';
 import MainLayout from '@/components/layout/MainLayout';
@@ -12,7 +12,13 @@ import ExperienceSection from '@/components/resume/ExperienceSection';
 import EducationSection from '@/components/resume/EducationSection';
 import ProjectsSection from '@/components/resume/ProjectsSection';
 import SkillsSection from '@/components/resume/SkillsSection';
+import CourseworkSection from '@/components/resume/CourseworkSection';
+import TechnicalSkillsSection from '@/components/resume/TechnicalSkillsSection';
+import AchievementsSection from '@/components/resume/AchievementsSection';
+import CertificationsInput from '@/components/resume/CertificationsInput';
 import ResumePreview from '@/components/resume/ResumePreview';
+import TemplateSelector from '@/components/resume/TemplateSelector';
+import ColorThemeSelector from '@/components/resume/ColorThemeSelector';
 import { Save, Eye, EyeOff, CheckCircle, XCircle, Download } from 'lucide-react';
 import { downloadResumePDF, triggerDownload } from '@/services/uploadService';
 
@@ -51,12 +57,16 @@ export default function ResumeEditorPage() {
       experience: [],
       education: [],
       projects: [],
+      coursework: [],
+      technicalSkills: [],
       skills: [],
       languages: [],
+      achievements: [],
       certifications: [],
       visibility: 'private',
       templateSettings: {
         template: 'modern',
+        colorTheme: 'blue',
         primaryColor: '#3b82f6',
         fontSize: 'medium',
         spacing: 'normal',
@@ -120,9 +130,19 @@ export default function ResumeEditorPage() {
       skills: data.skills?.filter(skill => skill && skill.trim() !== '') || [],
       languages: data.languages?.filter(lang => lang && lang.trim() !== '') || [],
       certifications: data.certifications?.filter(cert => cert && cert.trim() !== '') || [],
+      // Ensure templateSettings are included with current values
+      templateSettings: {
+        template: data.templateSettings?.template || 'modern',
+        colorTheme: data.templateSettings?.colorTheme || 'blue',
+        primaryColor: data.templateSettings?.primaryColor || '#3b82f6',
+        fontSize: data.templateSettings?.fontSize || 'medium',
+        spacing: data.templateSettings?.spacing || 'normal',
+        font: data.templateSettings?.font || 'sans-serif',
+      },
     };
 
     console.log('🧹 Cleaned resume data:', cleanedData);
+    console.log('🎨 Template settings:', cleanedData.templateSettings);
     
     try {
       // If no ID or ID is 'new', create a new resume
@@ -219,13 +239,33 @@ export default function ResumeEditorPage() {
     { id: 'experience', label: 'Experience' },
     { id: 'education', label: 'Education' },
     { id: 'projects', label: 'Projects' },
-    { id: 'skills', label: 'Skills & Others' },
+    { id: 'coursework', label: 'Coursework' },
+    { id: 'technical', label: 'Technical Skills' },
+    { id: 'skills', label: 'Skills & Languages' },
+    { id: 'achievements', label: 'Achievements' },
+    { id: 'certifications', label: 'Certifications' },
   ];
 
   const handleDownloadPDF = async () => {
     if (!id || id === 'new') {
       alert('Please save the resume first before downloading PDF');
       return;
+    }
+
+    // Auto-save if there are unsaved changes
+    if (isDirty) {
+      const confirmSave = window.confirm('You have unsaved changes. Would you like to save before downloading?');
+      if (confirmSave) {
+        try {
+          await handleSubmit(onSubmit)();
+          // Wait a moment for the save to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          console.error('Failed to save before download:', error);
+          alert('Please save your changes manually before downloading');
+          return;
+        }
+      }
     }
 
     setIsDownloading(true);
@@ -261,90 +301,103 @@ export default function ResumeEditorPage() {
     }
   };
 
+  const handleTemplateChange = (templateId: string) => {
+    setValue('templateSettings.template', templateId as any, { shouldDirty: true });
+    dispatch(updateTemplateSettings({ template: templateId }));
+  };
+
+  const handleColorThemeChange = (colorThemeId: string) => {
+    setValue('templateSettings.colorTheme', colorThemeId as any, { shouldDirty: true });
+    dispatch(updateTemplateSettings({ colorTheme: colorThemeId }));
+  };
+
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto h-full flex flex-col">
-        {/* Form wrapper - handles validation and submission */}
-        <form onSubmit={handleSubmit(onSubmit, (validationErrors) => {
-          console.error('❌ Form validation failed');
-          console.error('Validation errors:', validationErrors);
-          
-          // Log each field error clearly
-          Object.entries(validationErrors).forEach(([field, error]) => {
-            if (error && typeof error === 'object') {
-              // Handle nested errors like personalInfo.firstName
-              if ('message' in error) {
-                console.error(`  ❌ ${field}: ${error.message}`);
-              } else {
-                Object.entries(error).forEach(([nestedField, nestedError]) => {
-                  if (nestedError && typeof nestedError === 'object' && 'message' in nestedError) {
-                    console.error(`  ❌ ${field}.${nestedField}: ${nestedError.message}`);
-                  }
-                });
-              }
-            }
-          });
-        })} className="flex-1 flex flex-col overflow-hidden">
-        <div className="mb-6 flex items-center justify-between flex-shrink-0">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {!id || id === 'new' ? 'Create New Resume' : 'Edit Resume'}
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Fill in your information and see the live preview
-            </p>
-          </div>
-          <div className="flex gap-3">
-            {isDirty && (
-              <span className="text-sm text-amber-600 flex items-center gap-1 mr-2">
-                <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
-                Unsaved changes
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => setShowPreview(!showPreview)}
-              className="btn-outline lg:hidden"
-            >
-              {showPreview ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-            {/* Download PDF button - only show if editing existing resume */}
-            {id && id !== 'new' && (
+      {/* Top Header Bar - Fixed across all screen sizes */}
+      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+        <div className="max-w-full px-4 lg:px-6 py-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
+                {!id || id === 'new' ? 'Create New Resume' : 'Edit Resume'}
+              </h1>
+              <p className="text-xs lg:text-sm text-gray-600 mt-1">
+                Fill in your information and see the live preview
+              </p>
+            </div>
+            <div className="flex gap-2 lg:gap-3">
+              {isDirty && (
+                <span className="text-xs lg:text-sm text-amber-600 flex items-center gap-2 px-2 lg:px-3 py-2 bg-amber-50 rounded-lg">
+                  <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                  <span className="hidden sm:inline">Unsaved changes</span>
+                </span>
+              )}
+              {id && id !== 'new' && (
+                <button
+                  type="button"
+                  onClick={handleDownloadPDF}
+                  className="btn-outline flex items-center gap-2 text-sm"
+                  disabled={isDownloading}
+                >
+                  <Download size={18} />
+                  <span className="hidden sm:inline">{isDownloading ? 'Downloading...' : 'PDF'}</span>
+                </button>
+              )}
               <button
-                type="button"
-                onClick={handleDownloadPDF}
-                className="btn-outline flex items-center gap-2"
-                disabled={isDownloading}
+                type="submit"
+                form="resume-form"
+                className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow text-sm"
+                disabled={isLoading}
               >
-                <Download size={20} />
-                {isDownloading ? 'Downloading...' : 'PDF'}
+                <Save size={18} />
+                <span className="hidden sm:inline">{isLoading ? 'Saving...' : 'Save'}</span>
               </button>
-            )}
-            {/* Submit button - type="submit" triggers form validation and onSubmit handler */}
-            <button
-              type="submit"
-              className="btn-primary flex items-center gap-2"
-              disabled={isLoading}
-            >
-              <Save size={20} />
-              {isLoading ? 'Saving...' : 'Save Resume'}
-            </button>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 overflow-hidden">
-          {/* Editor Section */}
-          <div className={`${showPreview ? 'hidden lg:block' : ''} flex flex-col overflow-hidden`}>
-            <div className="card flex-1 flex flex-col overflow-hidden">
-              {/* Resume Title */}
-              <div className="mb-6 flex-shrink-0">
+      {/* Main Content Area - Two Column Layout on Desktop, Stacked on Mobile */}
+      <div className="flex flex-col lg:flex-row">
+        
+        {/* LEFT SECTION: Editor (Scrollable Independently) */}
+        <div className="w-full lg:w-1/2 bg-gray-50">
+          <form 
+            id="resume-form"
+            onSubmit={handleSubmit(onSubmit, (validationErrors) => {
+              console.error('❌ Form validation failed');
+              console.error('Validation errors:', validationErrors);
+              
+              Object.entries(validationErrors).forEach(([field, error]) => {
+                if (error && typeof error === 'object') {
+                  if ('message' in error) {
+                    console.error(`  ❌ ${field}: ${error.message}`);
+                  } else {
+                    Object.entries(error).forEach(([nestedField, nestedError]) => {
+                      if (nestedError && typeof nestedError === 'object' && 'message' in nestedError) {
+                        console.error(`  ❌ ${field}.${nestedField}: ${nestedError.message}`);
+                      }
+                    });
+                  }
+                }
+              });
+            })}
+            className="h-auto lg:h-[calc(100vh-5rem)] overflow-y-auto"
+          >
+            <div className="px-4 lg:px-6 py-6 max-w-3xl mx-auto space-y-6">
+              
+              {/* Resume Title Card */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
+                <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Resume Title</h2>
+                
                 {/* Validation Error Summary */}
                 {Object.keys(errors).length > 0 && (
-                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <h3 className="text-sm font-semibold text-red-800 mb-2">
+                  <div className="mb-4 p-3 lg:p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h3 className="text-xs lg:text-sm font-semibold text-red-800 mb-2 flex items-center gap-2">
+                      <XCircle size={16} />
                       Please fix the following errors:
                     </h3>
-                    <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
+                    <ul className="text-xs lg:text-sm text-red-700 list-disc list-inside space-y-1">
                       {errors.title && <li>{errors.title.message}</li>}
                       {errors.personalInfo?.firstName && <li>{errors.personalInfo.firstName.message}</li>}
                       {errors.personalInfo?.lastName && <li>{errors.personalInfo.lastName.message}</li>}
@@ -360,9 +413,6 @@ export default function ResumeEditorPage() {
                   </div>
                 )}
                 
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Resume Title
-                </label>
                 <input
                   type="text"
                   {...register('title')}
@@ -370,85 +420,130 @@ export default function ResumeEditorPage() {
                   placeholder="e.g., Software Engineer Resume"
                 />
                 {errors.title && (
-                  <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
+                  <p className="mt-1 text-xs lg:text-sm text-red-600">{errors.title.message}</p>
                 )}
               </div>
 
-              {/* Tabs */}
-              <div className="border-b border-gray-200 mb-6 flex-shrink-0">
-                <nav className="flex gap-4 overflow-x-auto">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`
-                        pb-3 px-1 border-b-2 font-medium text-sm whitespace-nowrap relative
-                        ${
-                          activeTab === tab.id
-                            ? 'border-primary-600 text-primary-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
-                        }
-                      `}
-                    >
-                      {tab.label}
-                      {/* Error indicator */}
-                      {((tab.id === 'personal' && (errors.personalInfo || errors.title)) ||
-                        (tab.id === 'experience' && errors.experience) ||
-                        (tab.id === 'education' && errors.education) ||
-                        (tab.id === 'projects' && errors.projects) ||
-                        (tab.id === 'skills' && errors.skills)) && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                      )}
-                    </button>
-                  ))}
-                </nav>
+              {/* Customization Panel - Moved to Left Section */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
+                <h3 className="font-semibold text-gray-900 text-base lg:text-lg mb-4 flex items-center gap-2">
+                  <Eye size={20} className="text-primary-600" />
+                  Customize Resume
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <TemplateSelector 
+                    value={formData.templateSettings?.template || 'modern'}
+                    onChange={handleTemplateChange}
+                  />
+                  <ColorThemeSelector 
+                    value={formData.templateSettings?.colorTheme || 'blue'}
+                    onChange={handleColorThemeChange}
+                  />
+                </div>
               </div>
 
-              {/* Tab Content */}
-              <div className="flex-1 overflow-y-auto">
-                {activeTab === 'personal' && (
-                  <PersonalInfoSection register={register} errors={errors} />
-                )}
-                {activeTab === 'summary' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Professional Summary
-                    </label>
-                    <textarea
-                      {...register('summary')}
-                      rows={6}
-                      className="textarea"
-                      placeholder="Write a brief summary about yourself..."
-                    />
-                  </div>
-                )}
-                {activeTab === 'experience' && (
-                  <ExperienceSection control={control} register={register} errors={errors} />
-                )}
-                {activeTab === 'education' && (
-                  <EducationSection control={control} register={register} errors={errors} />
-                )}
-                {activeTab === 'projects' && (
-                  <ProjectsSection control={control} register={register} setValue={setValue} errors={errors} />
-                )}
-                {activeTab === 'skills' && (
-                  <SkillsSection control={control} register={register} setValue={setValue} />
-                )}
+              {/* Tab Navigation */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="border-b border-gray-200 bg-gray-50 px-4 lg:px-6 py-3">
+                  <nav className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                    {tabs.map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`
+                          px-3 lg:px-4 py-2 rounded-lg font-medium text-xs lg:text-sm whitespace-nowrap relative transition-all
+                          ${
+                            activeTab === tab.id
+                              ? 'bg-primary-600 text-white shadow-md'
+                              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                          }
+                        `}
+                      >
+                        {tab.label}
+                        {/* Error indicator */}
+                        {((tab.id === 'personal' && (errors.personalInfo || errors.title)) ||
+                          (tab.id === 'experience' && errors.experience) ||
+                          (tab.id === 'education' && errors.education) ||
+                          (tab.id === 'projects' && errors.projects) ||
+                          (tab.id === 'skills' && errors.skills)) && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+                        )}
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+
+                {/* Tab Content */}
+                <div className="p-4 lg:p-6">
+                  {activeTab === 'personal' && (
+                    <PersonalInfoSection register={register} errors={errors} />
+                  )}
+                  {activeTab === 'summary' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Professional Summary
+                      </label>
+                      <textarea
+                        {...register('summary')}
+                        rows={6}
+                        className="textarea"
+                        placeholder="Write a brief summary about yourself..."
+                      />
+                    </div>
+                  )}
+                  {activeTab === 'experience' && (
+                    <ExperienceSection control={control} register={register} errors={errors} />
+                  )}
+                  {activeTab === 'education' && (
+                    <EducationSection control={control} register={register} errors={errors} />
+                  )}
+                  {activeTab === 'projects' && (
+                    <ProjectsSection control={control} register={register} setValue={setValue} errors={errors} />
+                  )}
+                  {activeTab === 'coursework' && (
+                    <CourseworkSection control={control} register={register} errors={errors} />
+                  )}
+                  {activeTab === 'technical' && (
+                    <TechnicalSkillsSection control={control} register={register} setValue={setValue} errors={errors} />
+                  )}
+                  {activeTab === 'skills' && (
+                    <div className="space-y-6">
+                      <SkillsSection control={control} register={register} setValue={setValue} />
+                    </div>
+                  )}
+                  {activeTab === 'achievements' && (
+                    <AchievementsSection control={control} register={register} setValue={setValue} errors={errors} />
+                  )}
+                  {activeTab === 'certifications' && (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Certifications</h3>
+                      <p className="text-sm text-gray-600">Add your professional certifications</p>
+                      <CertificationsInput control={control} setValue={setValue} />
+                    </div>
+                  )}
+                </div>
               </div>
+
             </div>
-          </div>
+          </form>
+        </div>
 
-          {/* Preview Section */}
-          <div className={`${!showPreview ? 'hidden lg:block' : ''} overflow-y-auto`}>
-            <div className="sticky top-0">
-              <ResumePreview data={formData} />
+        {/* RIGHT SECTION: Resume Preview (Sticky/Fixed on Desktop, Full Height) */}
+        <div className="w-full lg:w-1/2 lg:h-[calc(100vh-5rem)] lg:sticky lg:top-[5rem] bg-gray-100 border-l border-gray-200">
+          <div className="h-full overflow-y-auto p-4 lg:p-6">
+            <div className="flex justify-center items-start min-h-full">
+              <div className="transform scale-[0.5] sm:scale-[0.6] lg:scale-[0.65] origin-top" style={{ width: '210mm', minWidth: '210mm' }}>
+                <ResumePreview 
+                  data={formData} 
+                  templateSettings={formData.templateSettings}
+                />
+              </div>
             </div>
           </div>
         </div>
-        </form>
+
       </div>
     </MainLayout>
   );
 }
-      

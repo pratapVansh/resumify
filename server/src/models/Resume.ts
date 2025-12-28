@@ -50,6 +50,21 @@ export interface IProject {
 }
 
 /**
+ * Interface for Coursework items
+ */
+export interface ICoursework {
+  name: string;
+}
+
+/**
+ * Interface for Technical Skill Category
+ */
+export interface ITechnicalSkillCategory {
+  category: string;
+  items: string[];
+}
+
+/**
  * Interface for Personal Information
  */
 export interface IPersonalInfo {
@@ -69,7 +84,8 @@ export interface IPersonalInfo {
  * Interface for Template Settings
  */
 export interface ITemplateSettings {
-  template: 'modern' | 'classic' | 'minimal' | 'creative';
+  template: 'modern' | 'classic' | 'minimal' | 'creative' | 'professional' | 'executive' | 'compact';
+  colorTheme: 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'teal' | 'gray' | 'black' | 'maroon';
   primaryColor: string;
   fontSize: 'small' | 'medium' | 'large';
   spacing: 'compact' | 'normal' | 'spacious';
@@ -87,8 +103,11 @@ export interface IResume extends Document {
   experience: IExperience[];
   education: IEducation[];
   projects: IProject[];
+  coursework?: ICoursework[];
+  technicalSkills?: ITechnicalSkillCategory[];
   skills: string[];
   languages?: string[];
+  achievements?: string[];
   certifications?: string[];
   visibility: 'private' | 'public';
   shareId: string;
@@ -241,6 +260,40 @@ const projectSchema = new Schema<IProject>(
 );
 
 /**
+ * Coursework Schema
+ */
+const courseworkSchema = new Schema<ICoursework>(
+  {
+    name: {
+      type: String,
+      required: [true, 'Coursework name is required'],
+      trim: true,
+    },
+  },
+  { _id: true }
+);
+
+/**
+ * Technical Skill Category Schema
+ */
+const technicalSkillCategorySchema = new Schema<ITechnicalSkillCategory>(
+  {
+    category: {
+      type: String,
+      required: [true, 'Category name is required'],
+      trim: true,
+    },
+    items: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
+  },
+  { _id: true }
+);
+
+/**
  * Personal Info Schema
  */
 const personalInfoSchema = new Schema<IPersonalInfo>(
@@ -300,8 +353,13 @@ const templateSettingsSchema = new Schema<ITemplateSettings>(
   {
     template: {
       type: String,
-      enum: ['modern', 'classic', 'minimal', 'creative'],
+      enum: ['modern', 'classic', 'minimal', 'creative', 'professional', 'executive', 'compact'],
       default: 'modern',
+    },
+    colorTheme: {
+      type: String,
+      enum: ['blue', 'green', 'red', 'purple', 'orange', 'teal', 'gray', 'black', 'maroon'],
+      default: 'blue',
     },
     primaryColor: {
       type: String,
@@ -363,11 +421,23 @@ const resumeSchema = new Schema<IResume>(
       type: [projectSchema],
       default: [],
     },
+    coursework: {
+      type: [courseworkSchema],
+      default: [],
+    },
+    technicalSkills: {
+      type: [technicalSkillCategorySchema],
+      default: [],
+    },
     skills: {
       type: [String],
       default: [],
     },
     languages: {
+      type: [String],
+      default: [],
+    },
+    achievements: {
       type: [String],
       default: [],
     },

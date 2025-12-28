@@ -145,7 +145,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </header>
 
         {/* Page content */}
-        <main className="p-6 lg:p-8 h-[calc(100vh-4rem)] lg:h-screen overflow-auto">{children}</main>
+        <main className="p-6 lg:p-8 min-h-[calc(100vh-4rem)] lg:min-h-screen">{children}</main>
       </div>
     </div>
   );

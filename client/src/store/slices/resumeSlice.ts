@@ -108,6 +108,16 @@ const resumeSlice = createSlice({
     clearCurrentResume: (state) => {
       state.currentResume = null;
     },
+    updateTemplateSettings: (state, action: PayloadAction<{ template?: string; colorTheme?: string }>) => {
+      if (state.currentResume) {
+        if (action.payload.template) {
+          state.currentResume.templateSettings.template = action.payload.template as any;
+        }
+        if (action.payload.colorTheme) {
+          state.currentResume.templateSettings.colorTheme = action.payload.colorTheme as any;
+        }
+      }
+    },
   },
   extraReducers: (builder) => {
     // Fetch resumes
@@ -207,5 +217,5 @@ const resumeSlice = createSlice({
   },
 });
 
-export const { clearError, clearCurrentResume } = resumeSlice.actions;
+export const { clearError, clearCurrentResume, updateTemplateSettings } = resumeSlice.actions;
 export default resumeSlice.reducer;

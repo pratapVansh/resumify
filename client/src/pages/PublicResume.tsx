@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Download, Share2, ExternalLink, Mail, Phone, MapPin, Globe } from 'lucide-react';
+import { Download, Share2, ExternalLink } from 'lucide-react';
+import { MailIcon, PhoneIcon, MapPinIcon, GlobeIcon, LinkedinIcon, GithubIcon } from '../components/resume/ResumeIcons';
 import { getPublicResume } from '../services/resumeService';
 import { downloadPublicResume, triggerDownload } from '../services/uploadService';
 import PageLoader from '../components/common/PageLoader';
@@ -53,8 +54,16 @@ interface Resume {
     github?: string;
     highlights?: string[];
   }>;
+  coursework?: Array<{
+    name: string;
+  }>;
+  technicalSkills?: Array<{
+    category: string;
+    items: string[];
+  }>;
   skills: string[];
   languages?: string[];
+  achievements?: string[];
   certifications?: string[];
   templateSettings: {
     primaryColor: string;
@@ -227,19 +236,19 @@ const PublicResume: React.FC = () => {
                       <div className="flex flex-wrap justify-center md:justify-start gap-4 text-white/90">
                         {personalInfo.email && (
                           <a href={`mailto:${personalInfo.email}`} className="flex items-center gap-1 hover:text-white transition-colors">
-                            <Mail className="w-4 h-4" />
+                            <MailIcon size={16} color="currentColor" />
                             {personalInfo.email}
                           </a>
                         )}
                         {personalInfo.phone && (
                           <a href={`tel:${personalInfo.phone}`} className="flex items-center gap-1 hover:text-white transition-colors">
-                            <Phone className="w-4 h-4" />
+                            <PhoneIcon size={16} color="currentColor" />
                             {personalInfo.phone}
                           </a>
                         )}
                         {personalInfo.location && (
                           <span className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
+                            <MapPinIcon size={16} color="currentColor" />
                             {personalInfo.location}
                           </span>
                         )}
@@ -252,10 +261,9 @@ const PublicResume: React.FC = () => {
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 text-white/90 hover:text-white transition-colors"
+                            aria-label="Website"
                           >
-                            <Globe className="w-4 h-4" />
-                            Website
-                            <ExternalLink className="w-3 h-3" />
+                            <GlobeIcon size={16} color="currentColor" />
                           </a>
                         )}
                         {personalInfo.linkedin && (
@@ -264,9 +272,9 @@ const PublicResume: React.FC = () => {
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 text-white/90 hover:text-white transition-colors"
+                            aria-label="LinkedIn"
                           >
-                            LinkedIn
-                            <ExternalLink className="w-3 h-3" />
+                            <LinkedinIcon size={16} color="currentColor" />
                           </a>
                         )}
                         {personalInfo.github && (
@@ -275,9 +283,9 @@ const PublicResume: React.FC = () => {
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 text-white/90 hover:text-white transition-colors"
+                            aria-label="GitHub"
                           >
-                            GitHub
-                            <ExternalLink className="w-3 h-3" />
+                            <GithubIcon size={16} color="currentColor" />
                           </a>
                         )}
                       </div>
