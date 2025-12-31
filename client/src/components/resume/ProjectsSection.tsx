@@ -21,8 +21,8 @@ export default function ProjectsSection({ control, register, setValue, errors }:
       name: '',
       description: '',
       technologies: [],
-      startDate: '',
-      endDate: '',
+      startDate: undefined,
+      endDate: undefined,
       url: '',
       github: '',
       highlights: [],
@@ -187,6 +187,26 @@ function ProjectItem({ index, register, control, setValue, errors, onRemove }: P
             {errors.projects[index]?.technologies?.message}
           </p>
         )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+          <input
+            type="date"
+            {...register(`projects.${index}.startDate`)}
+            className="input"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+          <input
+            type="date"
+            {...register(`projects.${index}.endDate`)}
+            className="input"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

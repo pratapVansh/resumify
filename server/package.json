@@ -23,12 +23,15 @@
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.11.0",
     "mongoose": "^8.2.0",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "nanoid": "^5.0.4",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "pdf-parse": "^1.1.1",
+    "pdf2json": "^4.0.0",
     "puppeteer-core": "^24.33.0"
   },
   "devDependencies": {
@@ -42,6 +45,7 @@
     "@types/node": "^20.11.24",
     "@types/passport": "^1.0.16",
     "@types/passport-google-oauth20": "^2.0.14",
+    "@types/pdf-parse": "^1.1.5",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.57.0",

@@ -91,7 +91,7 @@ export default function ExperienceSection({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Start Date *
+                Start Date
               </label>
               <input
                 type="month"

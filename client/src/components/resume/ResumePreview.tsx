@@ -286,20 +286,15 @@ export default function ResumePreview({ data, templateSettings }: ResumePreviewP
                 </div>
                 <p className="text-gray-700 text-sm mb-1">{project.description}</p>
                 {project.technologies && project.technologies.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
+                  <p className="text-gray-700 text-sm">
+                    <span className="font-bold">Tech stack: </span>
                     {project.technologies.map((tech: string, techIndex: number) => (
-                      <span
-                        key={techIndex}
-                        className="px-2 py-0.5 text-xs rounded"
-                        style={{ 
-                          backgroundColor: colors.secondary,
-                          color: colors.text
-                        }}
-                      >
+                      <span key={techIndex}>
                         {typeof tech === 'string' ? tech.trim() : tech}
+                        {techIndex < project.technologies.length - 1 && ', '}
                       </span>
                     ))}
-                  </div>
+                  </p>
                 )}
               </div>
             ))}
@@ -368,25 +363,11 @@ export default function ResumePreview({ data, templateSettings }: ResumePreviewP
           >
             {template === 'executive' ? 'SKILLS' : 'Skills'}
           </h2>
-          <div className="flex flex-wrap gap-2">
+          <div className="text-gray-700">
             {skills.map((skill, index) => (
-              <span 
-                key={index} 
-                className={getSkillClassName()}
-                style={{
-                  backgroundColor: (template === 'professional' || template === 'creative') 
-                    ? colors.primary 
-                    : template === 'modern'
-                    ? colors.secondary
-                    : colors.secondary,
-                  color: (template === 'professional' || template === 'creative')
-                    ? 'white'
-                    : template === 'modern'
-                    ? colors.text
-                    : colors.primary
-                }}
-              >
-                {skill}
+              <span key={index}>
+                {typeof skill === 'string' ? skill : skill?.name || JSON.stringify(skill)}
+                {index < skills.length - 1 && ', '}
               </span>
             ))}
           </div>
@@ -409,7 +390,7 @@ export default function ResumePreview({ data, templateSettings }: ResumePreviewP
           <div className="flex flex-wrap gap-2">
             {languages.map((lang, index) => (
               <span key={index} className="text-gray-700">
-                {lang}
+                {typeof lang === 'string' ? lang : lang?.name || JSON.stringify(lang)}
                 {index < languages.length - 1 && <span className="mx-2">•</span>}
               </span>
             ))}
@@ -433,7 +414,7 @@ export default function ResumePreview({ data, templateSettings }: ResumePreviewP
           <ul className="list-disc list-inside space-y-1">
             {achievements.map((achievement, index) => (
               <li key={index} className="text-gray-700">
-                {achievement}
+                {typeof achievement === 'string' ? achievement : achievement?.name || achievement?.description || JSON.stringify(achievement)}
               </li>
             ))}
           </ul>
@@ -456,7 +437,7 @@ export default function ResumePreview({ data, templateSettings }: ResumePreviewP
           <ul className="list-disc list-inside space-y-1">
             {certifications.map((cert, index) => (
               <li key={index} className="text-gray-700">
-                {cert}
+                {typeof cert === 'string' ? cert : cert?.name || cert?.title || JSON.stringify(cert)}
               </li>
             ))}
           </ul>

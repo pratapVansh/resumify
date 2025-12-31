@@ -1,7 +1,7 @@
 import { Control, UseFormRegister, UseFormSetValue, FieldErrors, useFieldArray, useWatch } from 'react-hook-form';
 import { ResumeFormData } from '@/types';
 import { Plus, Trash2, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface TechnicalSkillsSectionProps {
   control: Control<ResumeFormData>;
@@ -30,6 +30,8 @@ export default function TechnicalSkillsSection({
     name: 'technicalSkills',
   });
 
+  const initializedRef = useRef(false);
+
   const addCategory = (categoryName: string = '') => {
     append({
       category: categoryName,
@@ -39,7 +41,8 @@ export default function TechnicalSkillsSection({
 
   // Initialize with default categories if none exist
   useEffect(() => {
-    if (fields.length === 0) {
+    if (fields.length === 0 && !initializedRef.current) {
+      initializedRef.current = true;
       defaultCategories.forEach(cat => addCategory(cat));
     }
   }, []);

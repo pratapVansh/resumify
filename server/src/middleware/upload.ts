@@ -25,6 +25,20 @@ const pdfFileFilter = (_req: Request, file: Express.Multer.File, cb: FileFilterC
   }
 };
 
+// File filter for resume documents (PDF and DOCX)
+const resumeDocumentFilter = (_req: Request, file: Express.Multer.File, cb: FileFilterCallback): void => {
+  const allowedMimeTypes = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  ];
+  
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only PDF and DOCX files are allowed'));
+  }
+};
+
 // Multer upload configurations
 export const uploadImage = multer({
   storage,
@@ -45,6 +59,15 @@ export const uploadPDF = multer({
 // Generic upload without file type restrictions
 export const uploadFile = multer({
   storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+});
+
+// Upload for resume documents (PDF and DOCX)
+export const uploadResumeDocument = multer({
+  storage,
+  fileFilter: resumeDocumentFilter,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },

@@ -10,6 +10,9 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { AppError } from '../utils/AppError.js';
 import { generateAndUploadResumePDF } from '../services/pdfService.js';
 import { uploadResumeFile } from '../services/uploadService.js';
+import mammoth from 'mammoth';
+import { parseResumeText } from '../services/aiService.js';
+import { extractTextFromPDF } from '../utils/pdfParser.js';
 
 /**
  * @route   POST /api/resumes
@@ -316,3 +319,121 @@ export const getResumeStats = asyncHandler(
     });
   }
 );
+
+/**
+ * @route   POST /api/resumes/parse
+ * @desc    Parse uploaded resume file (PDF or DOCX)
+ * @access  Private
+ */
+export const parseResume = asyncHandler(
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new AppError('User not authenticated', 401);
+    }
+
+    // Check if file was uploaded
+    if (!req.file) {
+      throw new AppError('No file uploaded', 400);
+    }
+
+    const file = req.file;
+
+    console.log('📄 Parsing resume file:', {
+      filename: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      userId,
+    });
+
+    // Validate file type (already handled by multer filter, but double-check)
+    const allowedMimeTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new AppError('Unsupported file format. Only PDF and DOCX files are allowed', 400);
+    }
+
+    let extractedText = '';
+
+    try {
+      // Detect file type and extract text accordingly
+      if (file.mimetype === 'application/pdf') {
+        console.log('📖 Extracting text from PDF...');
+        const pdfData = await extractTextFromPDF(file.buffer);
+        extractedText = pdfData.text;
+        console.log(`✅ Extracted ${pdfData.numpages} pages from PDF`);
+      } else if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        console.log('📖 Extracting text from DOCX...');
+        const result = await mammoth.extractRawText({ buffer: file.buffer });
+        extractedText = result.value;
+        if (result.messages.length > 0) {
+          console.log('⚠️  DOCX extraction warnings:', result.messages);
+        }
+        console.log('✅ Extracted text from DOCX');
+      }
+
+      // Clean extracted text
+      extractedText = cleanExtractedText(extractedText);
+
+      if (!extractedText || extractedText.trim().length === 0) {
+        throw new AppError('No text could be extracted from the file. The file may be empty or contain only images.', 400);
+      }
+
+      console.log(`✅ Resume parsed successfully. Extracted ${extractedText.length} characters`);
+
+      // Parse extracted text using Gemini AI
+      console.log('🤖 Sending text to Gemini for structured parsing...');
+      const parsedResumeData = await parseResumeText(extractedText);
+
+      res.status(200).json({
+        status: 'success',
+        data: {
+          filename: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          extractedText,
+          characterCount: extractedText.length,
+          wordCount: extractedText.split(/\s+/).filter(word => word.length > 0).length,
+          parsedData: parsedResumeData,
+        },
+      });
+    } catch (error: any) {
+      console.error('❌ Error parsing resume:', error);
+      
+      // Handle specific parsing errors
+      if (error.message?.includes('PDF') || error.message?.includes('password')) {
+        throw new AppError('Failed to parse PDF file. The file may be corrupted or password-protected.', 400);
+      } else if (error.message?.includes('DOCX') || error.message?.includes('zip')) {
+        throw new AppError('Failed to parse DOCX file. The file may be corrupted.', 400);
+      } else if (error instanceof AppError) {
+        throw error;
+      } else {
+        throw new AppError('An error occurred while parsing the resume file.', 500);
+      }
+    }
+  }
+);
+
+/**
+ * Clean extracted text by removing excessive whitespace and normalizing spacing
+ */
+function cleanExtractedText(text: string): string {
+  return text
+    // Trim leading and trailing whitespace
+    .trim()
+    // Replace multiple spaces with single space
+    .replace(/[ \t]+/g, ' ')
+    // Replace multiple newlines with maximum two newlines
+    .replace(/\n{3,}/g, '\n\n')
+    // Remove spaces before newlines
+    .replace(/ +\n/g, '\n')
+    // Remove spaces after newlines
+    .replace(/\n +/g, '\n')
+    // Normalize line endings
+    .replace(/\r\n/g, '\n')
+    .trim();
+}

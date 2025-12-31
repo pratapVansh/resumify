@@ -10,6 +10,7 @@ import {
   validateCreateResume,
   validateUpdateResume,
 } from '../middleware/resumeValidation.js';
+import { uploadResumeDocument } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -32,6 +33,9 @@ router.get('/', protect, resumeController.getMyResumes);
 
 // Create new resume
 router.post('/', protect, validateCreateResume, resumeController.createResume);
+
+// Parse uploaded resume file (PDF or DOCX)
+router.post('/parse', protect, uploadResumeDocument.single('file'), resumeController.parseResume);
 
 // Get single resume
 router.get('/:id', protect, resumeController.getResume);

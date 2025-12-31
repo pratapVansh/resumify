@@ -111,9 +111,17 @@ export const validateCreateResume = [
     .withMessage('Start date must be a valid date'),
 
   body('experience.*.endDate')
-    .optional()
-    .isISO8601()
-    .withMessage('End date must be a valid date'),
+    .optional({ checkFalsy: true })
+    .custom((value, { req, path }) => {
+      // Allow empty string or undefined
+      if (!value || value === '') return true;
+      // Validate as ISO8601 if value is present
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        throw new Error('End date must be a valid date');
+      }
+      return true;
+    }),
 
   body('experience.*.current')
     .optional()
@@ -157,9 +165,17 @@ export const validateCreateResume = [
     .withMessage('Start date must be a valid date'),
 
   body('education.*.endDate')
-    .optional()
-    .isISO8601()
-    .withMessage('End date must be a valid date'),
+    .optional({ checkFalsy: true })
+    .custom((value, { req, path }) => {
+      // Allow empty string or undefined
+      if (!value || value === '') return true;
+      // Validate as ISO8601 if value is present
+      const date = new Date(value);
+      if (isNaN(date.getTime())) {
+        throw new Error('End date must be a valid date');
+      }
+      return true;
+    }),
 
   body('projects')
     .optional()

@@ -22,11 +22,27 @@ const experienceSchema = z.object({
   company: z.string().min(1, 'Company is required'),
   position: z.string().min(1, 'Position is required'),
   location: z.string().optional(),
-  startDate: z.string().min(1, 'Start date is required'),
+  startDate: z.string().optional(),
   endDate: z.string().optional(),
-  current: z.boolean(),
+  current: z.boolean().optional(),
   description: z.string().min(1, 'Description is required'),
   achievements: z.array(z.string()).optional(),
+}).refine(
+  (data) => {
+    // If current is true, endDate should be empty or not required
+    if (data.current) {
+      return true;
+    }
+    // If not current, endDate can still be optional
+    return true;
+  },
+  { message: 'Invalid date configuration' }
+).transform((data) => {
+  // Clear endDate when current is true
+  if (data.current) {
+    return { ...data, endDate: '' };
+  }
+  return data;
 });
 
 const educationSchema = z.object({
@@ -35,11 +51,27 @@ const educationSchema = z.object({
   degree: z.string().min(1, 'Degree is required'),
   field: z.string().min(1, 'Field of study is required'),
   location: z.string().optional(),
-  startDate: z.string().min(1, 'Start date is required'),
+  startDate: z.string().optional(),
   endDate: z.string().optional(),
-  current: z.boolean(),
+  current: z.boolean().optional(),
   gpa: z.string().optional(),
   achievements: z.array(z.string()).optional(),
+}).refine(
+  (data) => {
+    // If current is true, endDate should be empty or not required
+    if (data.current) {
+      return true;
+    }
+    // If not current, endDate can still be optional
+    return true;
+  },
+  { message: 'Invalid date configuration' }
+).transform((data) => {
+  // Clear endDate when current is true
+  if (data.current) {
+    return { ...data, endDate: '' };
+  }
+  return data;
 });
 
 const projectSchema = z.object({
@@ -47,8 +79,8 @@ const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
   description: z.string().min(1, 'Description is required'),
   technologies: z.array(z.string()).min(1, 'At least one technology is required'),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
   url: z.string().optional().refine((val) => !val || val === '' || z.string().url().safeParse(val).success, {
     message: 'Invalid URL',
   }),
@@ -82,7 +114,6 @@ export const resumeSchema = z.object({
   languages: z.array(z.string()).optional(),
   achievements: z.array(z.string()).optional(),
   certifications: z.array(z.string()).optional(),
-  visibility: z.enum(['private', 'public']).optional(),
   templateSettings: z
     .object({
       template: z.enum(['modern', 'classic', 'minimal', 'creative', 'professional', 'executive', 'compact']),

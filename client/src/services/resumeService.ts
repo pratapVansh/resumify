@@ -48,6 +48,19 @@ export const resumeService = {
     const response = await api.get<ApiResponse<{ resume: Resume }>>(`/resumes/public/${shareId}`);
     return response.data.data!.resume;
   },
+
+  // Parse uploaded resume file
+  async parseResume(file: File): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post<ApiResponse<any>>('/resumes/parse', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.data;
+  },
 };
 
 // Standalone function for public resume access

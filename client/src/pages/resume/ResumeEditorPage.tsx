@@ -19,6 +19,7 @@ import CertificationsInput from '@/components/resume/CertificationsInput';
 import ResumePreview from '@/components/resume/ResumePreview';
 import TemplateSelector from '@/components/resume/TemplateSelector';
 import ColorThemeSelector from '@/components/resume/ColorThemeSelector';
+import ResumeUploadButton from '@/components/resume/ResumeUploadButton';
 import { Save, Eye, EyeOff, CheckCircle, XCircle, Download } from 'lucide-react';
 import { downloadResumePDF, triggerDownload } from '@/services/uploadService';
 
@@ -30,6 +31,7 @@ export default function ResumeEditorPage() {
   const [activeTab, setActiveTab] = useState('personal');
   const [showPreview, setShowPreview] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [hasImportedData, setHasImportedData] = useState(false);
 
   const {
     register,
@@ -63,7 +65,6 @@ export default function ResumeEditorPage() {
       languages: [],
       achievements: [],
       certifications: [],
-      visibility: 'private',
       templateSettings: {
         template: 'modern',
         colorTheme: 'blue',
@@ -87,11 +88,11 @@ export default function ResumeEditorPage() {
   }, [id, dispatch]);
 
   useEffect(() => {
-    if (currentResume && id && id !== 'new') {
+    if (currentResume) {
       console.log('📋 Loading resume data into form:', currentResume);
       reset(currentResume);
     }
-  }, [currentResume, reset, id]);
+  }, [currentResume, reset]);
 
   const onSubmit = async (data: ResumeFormData) => {
     console.log('📝 Submitting resume data:', data);
@@ -163,6 +164,7 @@ export default function ResumeEditorPage() {
             <span>Resume created successfully!</span>
           `;
           document.body.appendChild(successDiv);
+          setHasImportedData(false);
           setTimeout(() => {
             successDiv.remove();
             navigate('/dashboard');
@@ -200,9 +202,20 @@ export default function ResumeEditorPage() {
             <span>Resume saved successfully!</span>
           `;
           document.body.appendChild(successDiv);
+          setHasImportedData(false);
           setTimeout(() => successDiv.remove(), 3000);
           // Reset the form with the updated data to clear isDirty state
           reset(result.payload);
+          
+          // Refetch the resume after delays to get the updated PDF and preview URLs
+          // PDF generation happens in the background on the server, so we poll a few times
+          const refetchAttempts = [2000, 5000, 10000]; // Try at 2s, 5s, and 10s
+          refetchAttempts.forEach((delay) => {
+            setTimeout(() => {
+              console.log('🔄 Refetching resume to get updated PDF URLs...');
+              dispatch(fetchResume(id));
+            }, delay);
+          });
         } else if (updateResume.rejected.match(result)) {
           console.error('❌ Failed to update resume:', result.payload);
           const errorDiv = document.createElement('div');
@@ -311,46 +324,143 @@ export default function ResumeEditorPage() {
     dispatch(updateTemplateSettings({ colorTheme: colorThemeId }));
   };
 
+  const handleUploadSuccess = (parsedData: any) => {
+    console.log('📄 Parsed resume data:', parsedData);
+    
+    // Populate form with parsed data - all fields remain editable
+    if (parsedData.name) {
+      const nameParts = parsedData.name.split(' ');
+      setValue('personalInfo.firstName', nameParts[0] || '', { shouldDirty: true });
+      setValue('personalInfo.lastName', nameParts.slice(1).join(' ') || '', { shouldDirty: true });
+    }
+    
+    if (parsedData.email) setValue('personalInfo.email', parsedData.email, { shouldDirty: true });
+    if (parsedData.phone) setValue('personalInfo.phone', parsedData.phone, { shouldDirty: true });
+    if (parsedData.location) setValue('personalInfo.location', parsedData.location, { shouldDirty: true });
+    if (parsedData.summary) setValue('summary', parsedData.summary, { shouldDirty: true });
+    
+    if (parsedData.skills && Array.isArray(parsedData.skills)) {
+      setValue('skills', parsedData.skills, { shouldDirty: true });
+    }
+    
+    if (parsedData.education && Array.isArray(parsedData.education)) {
+      setValue('education', parsedData.education.map((edu: any) => ({
+        institution: edu.institution || '',
+        degree: edu.degree || '',
+        field: edu.field || '',
+        startDate: edu.startDate || '',
+        endDate: edu.endDate || '',
+        gpa: edu.gpa || '',
+      })), { shouldDirty: true });
+    }
+    
+    if (parsedData.experience && Array.isArray(parsedData.experience)) {
+      setValue('experience', parsedData.experience.map((exp: any) => ({
+        company: exp.company || '',
+        position: exp.position || '',
+        startDate: exp.startDate || '',
+        endDate: exp.endDate || '',
+        location: exp.location || '',
+        description: Array.isArray(exp.description) ? exp.description : [],
+      })), { shouldDirty: true });
+    }
+    
+    if (parsedData.projects && Array.isArray(parsedData.projects)) {
+      setValue('projects', parsedData.projects.map((proj: any) => ({
+        name: proj.name || '',
+        description: proj.description || '',
+        technologies: Array.isArray(proj.technologies) ? proj.technologies : [],
+        link: proj.link || '',
+      })), { shouldDirty: true });
+    }
+    
+    // Show warning notification - data is NOT auto-saved
+    const warningDiv = document.createElement('div');
+    warningDiv.className = 'fixed top-4 right-4 bg-amber-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 animate-fade-in max-w-md';
+    warningDiv.innerHTML = `
+      <div class="flex items-start gap-3">
+        <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+        <div>
+          <p class="font-semibold mb-1">Resume data extracted successfully!</p>
+          <p class="text-sm opacity-95">⚠️ Please review all extracted information carefully before saving. You can edit any field as needed.</p>
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-amber-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    `;
+    document.body.appendChild(warningDiv);
+    
+    // Auto-dismiss after 8 seconds
+    setTimeout(() => {
+      if (warningDiv.parentElement) {
+        warningDiv.remove();
+      }
+    }, 8000);
+    
+    // Switch to personal info tab to see imported data
+    setActiveTab('personal');
+    
+    // Mark that we have imported data (for warning banner)
+    setHasImportedData(true);
+  };
+
+  const handleUploadError = (error: string) => {
+    console.error('Upload error:', error);
+    // Error is already shown by ResumeUploadButton component
+  };
+
   return (
     <MainLayout>
       {/* Top Header Bar - Fixed across all screen sizes */}
-      <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-        <div className="max-w-full px-4 lg:px-6 py-4">
+      <div className="bg-white border-b border-gray-200/80 shadow-sm sticky top-0 z-10">
+        <div className="max-w-full px-4 lg:px-6 py-3.5">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
+              <h1 className="text-lg lg:text-xl font-semibold text-gray-900 tracking-tight">
                 {!id || id === 'new' ? 'Create New Resume' : 'Edit Resume'}
               </h1>
-              <p className="text-xs lg:text-sm text-gray-600 mt-1">
+              <p className="text-xs text-gray-500 mt-0.5">
                 Fill in your information and see the live preview
               </p>
             </div>
-            <div className="flex gap-2 lg:gap-3">
+            <div className="flex gap-2">
               {isDirty && (
-                <span className="text-xs lg:text-sm text-amber-600 flex items-center gap-2 px-2 lg:px-3 py-2 bg-amber-50 rounded-lg">
-                  <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
-                  <span className="hidden sm:inline">Unsaved changes</span>
+                <span className="text-xs text-amber-600 flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 rounded-lg border border-amber-200/50">
+                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+                  <span className="hidden sm:inline font-medium">Unsaved changes</span>
                 </span>
+              )}
+              {(!id || id === 'new') && (
+                <ResumeUploadButton 
+                  onUploadSuccess={handleUploadSuccess}
+                  onUploadError={handleUploadError}
+                />
               )}
               {id && id !== 'new' && (
                 <button
                   type="button"
                   onClick={handleDownloadPDF}
-                  className="btn-outline flex items-center gap-2 text-sm"
+                  className="btn-outline flex items-center gap-1.5 text-sm px-3"
                   disabled={isDownloading}
                 >
-                  <Download size={18} />
-                  <span className="hidden sm:inline">{isDownloading ? 'Downloading...' : 'PDF'}</span>
+                  <Download size={16} />
+                  <span className="hidden sm:inline">{isDownloading ? 'Downloading...' : 'Download'}</span>
                 </button>
               )}
               <button
                 type="submit"
                 form="resume-form"
-                className="btn-primary flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow text-sm"
+                className="btn-primary flex items-center gap-1.5 text-sm px-3.5"
                 disabled={isLoading}
               >
-                <Save size={18} />
-                <span className="hidden sm:inline">{isLoading ? 'Saving...' : 'Save'}</span>
+                <Save size={16} />
+                <span className="hidden sm:inline">{isLoading ? 'Saving...' : 'Save Resume'}</span>
+                <span className="sm:hidden">Save</span>
               </button>
             </div>
           </div>
@@ -382,22 +492,51 @@ export default function ResumeEditorPage() {
                 }
               });
             })}
-            className="h-auto lg:h-[calc(100vh-5rem)] overflow-y-auto"
+            className="h-auto lg:h-[calc(100vh-5rem)] overflow-y-auto hide-scrollbar"
           >
             <div className="px-4 lg:px-6 py-6 max-w-3xl mx-auto space-y-6">
               
+              {/* Imported Data Warning Banner */}
+              {hasImportedData && isDirty && (
+                <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-amber-800 mb-1">
+                        Review Extracted Information
+                      </h3>
+                      <p className="text-sm text-amber-700">
+                        Please carefully review all extracted data before saving. All fields are editable and you can make any necessary corrections.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setHasImportedData(false)}
+                      className="text-amber-600 hover:text-amber-800 transition-colors"
+                      aria-label="Dismiss warning"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+              
               {/* Resume Title Card */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
-                <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-4">Resume Title</h2>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-5 lg:p-6">
+                <h2 className="text-base font-semibold text-gray-900 mb-4 tracking-tight">Resume Title</h2>
                 
                 {/* Validation Error Summary */}
                 {Object.keys(errors).length > 0 && (
-                  <div className="mb-4 p-3 lg:p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <h3 className="text-xs lg:text-sm font-semibold text-red-800 mb-2 flex items-center gap-2">
-                      <XCircle size={16} />
+                  <div className="mb-4 p-3.5 bg-red-50 border border-red-200/60 rounded-xl">
+                    <h3 className="text-sm font-medium text-red-800 mb-2 flex items-center gap-2">
+                      <XCircle size={16} strokeWidth={2} />
                       Please fix the following errors:
                     </h3>
-                    <ul className="text-xs lg:text-sm text-red-700 list-disc list-inside space-y-1">
+                    <ul className="text-xs text-red-700 list-disc list-inside space-y-1">
                       {errors.title && <li>{errors.title.message}</li>}
                       {errors.personalInfo?.firstName && <li>{errors.personalInfo.firstName.message}</li>}
                       {errors.personalInfo?.lastName && <li>{errors.personalInfo.lastName.message}</li>}
@@ -425,12 +564,12 @@ export default function ResumeEditorPage() {
               </div>
 
               {/* Customization Panel - Moved to Left Section */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
-                <h3 className="font-semibold text-gray-900 text-base lg:text-lg mb-4 flex items-center gap-2">
-                  <Eye size={20} className="text-primary-600" />
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 p-5 lg:p-6">
+                <h3 className="font-semibold text-gray-900 text-base mb-4 flex items-center gap-2 tracking-tight">
+                  <Eye size={18} className="text-blue-600" strokeWidth={2} />
                   Customize Resume
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <TemplateSelector 
                     value={formData.templateSettings?.template || 'modern'}
                     onChange={handleTemplateChange}
@@ -443,20 +582,20 @@ export default function ResumeEditorPage() {
               </div>
 
               {/* Tab Navigation */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="border-b border-gray-200 bg-gray-50 px-4 lg:px-6 py-3">
-                  <nav className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200/60 overflow-hidden">
+                <div className="border-b border-gray-100 bg-gray-50/50 px-4 lg:px-6 py-3">
+                  <nav className="flex gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
                         className={`
-                          px-3 lg:px-4 py-2 rounded-lg font-medium text-xs lg:text-sm whitespace-nowrap relative transition-all
+                          px-3 py-2 rounded-lg font-medium text-xs whitespace-nowrap relative transition-all
                           ${
                             activeTab === tab.id
-                              ? 'bg-primary-600 text-white shadow-md'
-                              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                              ? 'bg-blue-600 text-white shadow-sm'
+                              : 'bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-gray-200/60'
                           }
                         `}
                       >
@@ -467,7 +606,7 @@ export default function ResumeEditorPage() {
                           (tab.id === 'education' && errors.education) ||
                           (tab.id === 'projects' && errors.projects) ||
                           (tab.id === 'skills' && errors.skills)) && (
-                          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+                          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
                         )}
                       </button>
                     ))}
@@ -475,7 +614,7 @@ export default function ResumeEditorPage() {
                 </div>
 
                 {/* Tab Content */}
-                <div className="p-4 lg:p-6">
+                <div className="p-5 lg:p-6">
                   {activeTab === 'personal' && (
                     <PersonalInfoSection register={register} errors={errors} />
                   )}
@@ -531,7 +670,7 @@ export default function ResumeEditorPage() {
 
         {/* RIGHT SECTION: Resume Preview (Sticky/Fixed on Desktop, Full Height) */}
         <div className="w-full lg:w-1/2 lg:h-[calc(100vh-5rem)] lg:sticky lg:top-[5rem] bg-gray-100 border-l border-gray-200">
-          <div className="h-full overflow-y-auto p-4 lg:p-6">
+          <div className="h-full overflow-y-auto hide-scrollbar p-4 lg:p-6">
             <div className="flex justify-center items-start min-h-full">
               <div className="transform scale-[0.5] sm:scale-[0.6] lg:scale-[0.65] origin-top" style={{ width: '210mm', minWidth: '210mm' }}>
                 <ResumePreview 

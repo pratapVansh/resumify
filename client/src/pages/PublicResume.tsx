@@ -354,20 +354,15 @@ const PublicResume: React.FC = () => {
                             <h3 className="text-xl font-semibold text-gray-900">{project.name}</h3>
                             <p className="text-gray-700 mb-2">{project.description}</p>
                             {project.technologies && project.technologies.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mb-2">
+                              <p className="text-gray-700 text-sm mb-2">
+                                <span className="font-bold">Tech stack: </span>
                                 {project.technologies.map((tech, i) => (
-                                  <span 
-                                    key={i} 
-                                    className="px-2 py-1 text-xs font-medium rounded"
-                                    style={{ 
-                                      backgroundColor: `${resume.templateSettings.primaryColor}15`,
-                                      color: resume.templateSettings.primaryColor 
-                                    }}
-                                  >
+                                  <span key={i}>
                                     {tech}
+                                    {i < project.technologies.length - 1 && ', '}
                                   </span>
                                 ))}
-                              </div>
+                              </p>
                             )}
                             {(project.url || project.github) && (
                               <div className="flex gap-4 text-sm">

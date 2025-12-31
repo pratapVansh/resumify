@@ -114,21 +114,21 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header with Profile Section */}
         <FadeIn>
-          <div className="mb-8 flex items-start justify-between">
+          <div className="mb-6 flex items-start justify-between">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Welcome back, {user?.firstName || 'there'}! 👋
+              <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-1.5 tracking-tight">
+                Welcome back, {user?.firstName || 'there'}!
               </h1>
-              <p className="text-gray-600">Manage your resumes and create new ones</p>
+              <p className="text-sm text-gray-500">Manage your resumes and create new ones</p>
             </div>
             
             {/* Profile Section Toggle */}
             <button
               onClick={() => setShowProfile(!showProfile)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-3.5 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all text-sm font-medium text-gray-700 shadow-sm"
             >
-              <User className="w-5 h-5 text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">Profile</span>
+              <User className="w-4 h-4" />
+              <span className="hidden sm:inline">Profile</span>
             </button>
           </div>
         </FadeIn>
@@ -136,8 +136,8 @@ export default function DashboardPage() {
         {/* Profile Photo Upload Section */}
         {showProfile && (
           <FadeIn>
-            <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Profile Settings</h2>
+            <div className="mb-6 bg-white rounded-xl shadow-sm border border-gray-200/60 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-6 tracking-tight">Profile Settings</h2>
               <div className="flex flex-col items-center">
                 <ProfilePhotoUpload
                   currentPhotoUrl={profilePhoto}
@@ -151,62 +151,33 @@ export default function DashboardPage() {
 
         {/* Stats */}
         <StaggerChildren>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <SlideIn direction="up" delay={100}>
-              <div className="card">
+              <div className="card hover:shadow-md">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                    <FileText className="text-primary-600" size={24} />
+                  <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
+                    <FileText className="text-blue-600" size={20} strokeWidth={2} />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Total Resumes</p>
-                    <p className="text-2xl font-bold text-gray-900">{resumes.length}</p>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Resumes</p>
+                    <p className="text-2xl font-semibold text-gray-900 mt-0.5">{resumes.length}</p>
                   </div>
                 </div>
               </div>
             </SlideIn>
 
-            <SlideIn direction="up" delay={200}>
-              <div className="card">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                    <Eye className="text-green-600" size={24} />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Public Resumes</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {resumes.filter((r) => r.visibility === 'public').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </SlideIn>
 
-            <SlideIn direction="up" delay={300}>
-              <div className="card">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                    <EyeOff className="text-purple-600" size={24} />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Private Resumes</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {resumes.filter((r) => r.visibility === 'private').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </SlideIn>
           </div>
         </StaggerChildren>
 
         {/* Resumes list */}
         <FadeIn delay={400}>
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Your Resumes</h2>
+          <div className="mb-5 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900 tracking-tight">Your Resumes</h2>
             <button onClick={handleCreateResume} className="btn-primary flex items-center gap-2">
-              <Plus size={20} />
-              Create New Resume
+              <Plus size={18} strokeWidth={2} />
+              <span className="hidden sm:inline">Create New</span>
+              <span className="sm:hidden">New</span>
             </button>
           </div>
         </FadeIn>
@@ -224,13 +195,13 @@ export default function DashboardPage() {
             </div>
           </SlideIn>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {resumes.map((resume, index) => (
               <SlideIn key={resume._id} direction="up" delay={500 + (index * 50)}>
-                <div className="group bg-white rounded-lg border border-gray-200 hover:shadow-xl transition-all duration-200 overflow-hidden">
+                <div className="group bg-white rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-lg shadow-sm transition-all duration-200 overflow-hidden">
                   {/* Thumbnail Preview */}
                   <div 
-                    className="relative bg-gray-100 aspect-[3/4] cursor-pointer overflow-hidden"
+                    className="relative bg-gray-50 aspect-[1.414/1] cursor-pointer overflow-hidden"
                     onClick={() => handleViewPDF(resume)}
                   >
                     {/* Use previewUrl with fallback to thumbnailUrl */}
@@ -238,7 +209,7 @@ export default function DashboardPage() {
                       <img
                         src={resume.previewUrl || resume.thumbnailUrl}
                         alt={resume.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        className="w-full h-full object-cover object-top group-hover:scale-[1.02] transition-transform duration-300"
                         onError={(e) => {
                           // Fallback to placeholder if preview fails to load
                           e.currentTarget.style.display = 'none';
@@ -247,81 +218,58 @@ export default function DashboardPage() {
                       />
                     ) : null}
                     {/* Fallback Icon */}
-                    <div className={`${(resume.previewUrl || resume.thumbnailUrl) ? 'hidden' : ''} absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100`}>
-                      <FileText className="text-blue-500" size={64} strokeWidth={1.5} />
-                    </div>
-                    
-                    {/* Visibility Badge */}
-                    <div className="absolute top-2 right-2">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full backdrop-blur-sm ${
-                          resume.visibility === 'public'
-                            ? 'bg-green-500/90 text-white'
-                            : 'bg-gray-700/90 text-white'
-                        }`}
-                      >
-                        {resume.visibility === 'public' ? (
-                          <span className="flex items-center gap-1">
-                            <Eye size={12} />
-                            Public
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1">
-                            <EyeOff size={12} />
-                            Private
-                          </span>
-                        )}
-                      </span>
+                    <div className={`${(resume.previewUrl || resume.thumbnailUrl) ? 'hidden' : ''} absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100`}>
+                      <FileText className="text-gray-400" size={48} strokeWidth={1.5} />
                     </div>
 
                     {/* Hover Overlay */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <span className="text-white font-medium text-sm bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg">
-                        Click to view PDF
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <span className="text-white font-medium text-xs bg-blue-600/90 px-3 py-1.5 rounded-md shadow-sm">
+                        View PDF
                       </span>
                     </div>
                   </div>
 
                   {/* Resume Info */}
-                  <div className="p-4">
+                  <div className="p-3">
                     <h3 
-                      className="font-semibold text-gray-900 truncate mb-1 cursor-pointer hover:text-primary-600"
+                      className="font-medium text-sm text-gray-900 truncate mb-1 cursor-pointer hover:text-blue-600 transition-colors"
                       onClick={() => handleEditResume(resume._id)}
                       title={resume.title}
                     >
                       {resume.title}
                     </h3>
-                    <p className="text-xs text-gray-500 mb-3">
+                    <p className="text-xs text-gray-500 mb-2">
                       Updated {formatDate(resume.updatedAt)}
                     </p>
 
                     {/* Quick Stats */}
-                    <div className="flex flex-wrap gap-1 mb-3 text-xs text-gray-600">
+                    <div className="hidden flex-wrap gap-1 mb-2 text-xs text-gray-600">
                       {resume.experience.length > 0 && (
-                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                        <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded text-[10px] font-medium">
                           {resume.experience.length} exp
                         </span>
                       )}
                       {resume.education.length > 0 && (
-                        <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded">
+                        <span className="bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded text-[10px] font-medium">
                           {resume.education.length} edu
                         </span>
                       )}
                       {resume.projects.length > 0 && (
-                        <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded">
+                        <span className="bg-green-50 text-green-600 px-1.5 py-0.5 rounded text-[10px] font-medium">
                           {resume.projects.length} proj
                         </span>
                       )}
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-1">
+                    <div className="flex gap-0.5">
                       <button
                         onClick={() => handleEditResume(resume._id)}
-                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
                         title="Edit Resume"
                       >
-                        <Edit size={14} />
+                        <Edit size={13} />
                         Edit
                       </button>
                       <button
@@ -329,30 +277,21 @@ export default function DashboardPage() {
                         className="flex items-center justify-center p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
                         title="Download PDF"
                       >
-                        <Download size={16} />
+                        <Download size={15} />
                       </button>
                       <button
                         onClick={() => handleDuplicateResume(resume._id)}
                         className="flex items-center justify-center p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
                         title="Duplicate"
                       >
-                        <Copy size={16} />
+                        <Copy size={15} />
                       </button>
-                      {resume.visibility === 'public' && (
-                        <button
-                          onClick={() => handleViewPublic(resume.shareId)}
-                          className="flex items-center justify-center p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                          title="View Public Link"
-                        >
-                          <ExternalLink size={16} />
-                        </button>
-                      )}
                       <button
                         onClick={() => handleDeleteResume(resume._id)}
                         className="flex items-center justify-center p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                         title="Delete"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>

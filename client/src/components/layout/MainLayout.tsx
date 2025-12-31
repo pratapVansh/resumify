@@ -54,15 +54,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 z-30 h-full w-64 bg-white border-r border-gray-200
+          fixed top-0 left-0 z-30 h-full w-64 bg-white border-r border-gray-200/80 shadow-sm
           transform transition-transform duration-300 ease-in-out lg:translate-x-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-            <Link to="/dashboard" className="text-2xl font-bold text-primary-600">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-100">
+            <Link to="/dashboard" className="text-xl font-bold text-gray-900 tracking-tight">
               Resumify
             </Link>
             <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
@@ -71,7 +71,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-1">
+          <nav className="flex-1 px-3 py-6 space-y-1">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
@@ -80,15 +80,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   key={item.name}
                   to={item.href}
                   className={`
-                    flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+                    flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
                     ${
                       isActive
-                        ? 'bg-primary-50 text-primary-700 font-medium'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-blue-50 text-blue-700 shadow-sm'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                     }
                   `}
                 >
-                  <Icon size={20} />
+                  <Icon size={18} strokeWidth={2} />
                   {item.name}
                 </Link>
               );
@@ -96,9 +96,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </nav>
 
           {/* User profile */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold overflow-hidden ring-2 ring-gray-200">
+          <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-semibold overflow-hidden ring-1 ring-gray-200">
                 {profilePhoto ? (
                   <img 
                     src={profilePhoto} 
@@ -110,7 +110,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-gray-900 truncate leading-tight">
                   {user?.firstName && user?.lastName
                     ? `${user.firstName} ${user.lastName}`
                     : user?.email}
@@ -120,9 +120,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
             </div>
             <button
               onClick={handleLogout}
-              className="btn-outline w-full flex items-center justify-center gap-2"
+              className="btn-outline w-full flex items-center justify-center gap-2 text-xs"
             >
-              <LogOut size={16} />
+              <LogOut size={14} />
               Logout
             </button>
           </div>
@@ -132,12 +132,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar (mobile) */}
-        <header className="sticky top-0 z-10 h-16 bg-white border-b border-gray-200 lg:hidden">
+        <header className="sticky top-0 z-10 h-16 bg-white border-b border-gray-200/80 lg:hidden shadow-sm">
           <div className="flex items-center justify-between h-full px-4">
-            <button onClick={() => setSidebarOpen(true)}>
-              <Menu size={24} />
+            <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <Menu size={20} />
             </button>
-            <Link to="/dashboard" className="text-xl font-bold text-primary-600">
+            <Link to="/dashboard" className="text-lg font-bold text-gray-900 tracking-tight">
               Resumify
             </Link>
             <div className="w-6" /> {/* Spacer for centering */}
@@ -145,7 +145,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </header>
 
         {/* Page content */}
-        <main className="p-6 lg:p-8 min-h-[calc(100vh-4rem)] lg:min-h-screen">{children}</main>
+        <main className="p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-4rem)] lg:min-h-screen max-w-[1600px] mx-auto">{children}</main>
       </div>
     </div>
   );
