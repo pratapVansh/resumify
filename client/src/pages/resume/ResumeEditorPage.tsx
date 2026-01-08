@@ -20,8 +20,10 @@ import ResumePreview from '@/components/resume/ResumePreview';
 import TemplateSelector from '@/components/resume/TemplateSelector';
 import ColorThemeSelector from '@/components/resume/ColorThemeSelector';
 import ResumeUploadButton from '@/components/resume/ResumeUploadButton';
+import AIEnhanceButton from '@/components/common/AIEnhanceButton';
 import { Save, Eye, EyeOff, CheckCircle, XCircle, Download } from 'lucide-react';
 import { downloadResumePDF, triggerDownload } from '@/services/uploadService';
+import { enhanceSummary } from '@/services/aiService';
 
 export default function ResumeEditorPage() {
   const { id } = useParams();
@@ -32,6 +34,7 @@ export default function ResumeEditorPage() {
   const [showPreview, setShowPreview] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [hasImportedData, setHasImportedData] = useState(false);
+  const [isEnhancingSummary, setIsEnhancingSummary] = useState(false);
 
   const {
     register,
@@ -90,7 +93,30 @@ export default function ResumeEditorPage() {
   useEffect(() => {
     if (currentResume) {
       console.log('📋 Loading resume data into form:', currentResume);
-      reset(currentResume);
+      
+      // Transform the resume data to ensure proper format
+      const transformedResume = {
+        ...currentResume,
+        experience: currentResume.experience?.map(exp => ({
+          ...exp,
+          startDate: exp.startDate ? String(exp.startDate).substring(0, 7) : '',
+          endDate: exp.current ? '' : (exp.endDate ? String(exp.endDate).substring(0, 7) : ''),
+          current: exp.current || false,
+        })) || [],
+        education: currentResume.education?.map(edu => ({
+          ...edu,
+          startDate: edu.startDate ? String(edu.startDate).substring(0, 7) : '',
+          endDate: edu.current ? '' : (edu.endDate ? String(edu.endDate).substring(0, 7) : ''),
+          current: edu.current || false,
+        })) || [],
+        projects: currentResume.projects?.map(proj => ({
+          ...proj,
+          startDate: proj.startDate ? String(proj.startDate).substring(0, 10) : undefined,
+          endDate: proj.endDate ? String(proj.endDate).substring(0, 10) : undefined,
+        })) || [],
+      };
+      
+      reset(transformedResume);
     }
   }, [currentResume, reset]);
 
@@ -113,11 +139,11 @@ export default function ResumeEditorPage() {
       },
       // Filter out incomplete experience entries
       experience: data.experience?.filter(exp => 
-        exp.company && exp.position && exp.startDate && exp.description
+        exp.company && exp.position && exp.description
       ) || [],
       // Filter out incomplete education entries
       education: data.education?.filter(edu => 
-        edu.institution && edu.degree && edu.field && edu.startDate
+        edu.institution && edu.degree && edu.field
       ) || [],
       // Filter out incomplete project entries
       projects: data.projects?.filter(proj => 
@@ -243,6 +269,31 @@ export default function ResumeEditorPage() {
       `;
       document.body.appendChild(errorDiv);
       setTimeout(() => errorDiv.remove(), 5000);
+    }
+  };
+
+  // AI enhancement for summary
+  const handleEnhanceSummary = async () => {
+    setIsEnhancingSummary(true);
+    try {
+      const currentSummary = watch('summary')?.trim() || '';
+      
+      if (!currentSummary || currentSummary.length < 10) {
+        alert('Please write at least 10 characters in the summary before enhancing it with AI.');
+        setIsEnhancingSummary(false);
+        return;
+      }
+
+      console.log('Sending summary to AI:', currentSummary);
+      
+      const enhanced = await enhanceSummary(String(currentSummary));
+      setValue('summary', enhanced, { shouldDirty: true });
+    } catch (error: any) {
+      console.error('AI Enhancement Error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to enhance summary with AI';
+      alert(errorMessage);
+    } finally {
+      setIsEnhancingSummary(false);
     }
   };
 
@@ -620,9 +671,16 @@ export default function ResumeEditorPage() {
                   )}
                   {activeTab === 'summary' && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Professional Summary
-                      </label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Professional Summary
+                        </label>
+                        <AIEnhanceButton
+                          onEnhance={handleEnhanceSummary}
+                          label="Enhance Summary"
+                          disabled={isEnhancingSummary}
+                        />
+                      </div>
                       <textarea
                         {...register('summary')}
                         rows={6}
@@ -632,7 +690,7 @@ export default function ResumeEditorPage() {
                     </div>
                   )}
                   {activeTab === 'experience' && (
-                    <ExperienceSection control={control} register={register} errors={errors} />
+                    <ExperienceSection control={control} register={register} errors={errors} setValue={setValue} />
                   )}
                   {activeTab === 'education' && (
                     <EducationSection control={control} register={register} errors={errors} />

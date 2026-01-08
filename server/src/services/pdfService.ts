@@ -634,9 +634,9 @@ const generateResumeHTML = (resume: IResume): string => {
         <div class="section ${templateStyles.sectionClass}">
           <div class="section-title">${templateType === 'executive' ? 'SKILLS' : 'Skills'}</div>
           <div class="section-content">
-            <div class="skills-container">
-              ${skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
-            </div>
+            <p style="color: ${colorScheme.textLight}; line-height: 1.6;">
+              ${skills.join(', ')}
+            </p>
           </div>
         </div>
         ` : ''}
@@ -646,9 +646,9 @@ const generateResumeHTML = (resume: IResume): string => {
         <div class="section ${templateStyles.sectionClass}">
           <div class="section-title">${templateType === 'executive' ? 'LANGUAGES' : 'Languages'}</div>
           <div class="section-content">
-            <div class="skills-container">
-              ${languages.map(lang => `<span class="skill-tag">${lang}</span>`).join('')}
-            </div>
+            <p style="color: ${colorScheme.textLight}; line-height: 1.6;">
+              ${languages.join(', ')}
+            </p>
           </div>
         </div>
         ` : ''}

@@ -145,7 +145,14 @@ export default function ResumePreview({ data, templateSettings }: ResumePreviewP
           >
             {template === 'executive' ? 'PROFESSIONAL SUMMARY' : 'Summary'}
           </h2>
-          <p className="text-gray-700 leading-relaxed">{summary}</p>
+          <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+            {summary.split('\n').map((line, i) => {
+              if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+                return <div key={i} className="ml-2">{line}</div>;
+              }
+              return <div key={i}>{line}</div>;
+            })}
+          </div>
         </div>
       )}
 
@@ -182,7 +189,15 @@ export default function ResumePreview({ data, templateSettings }: ResumePreviewP
                     </p>
                   </div>
                 </div>
-                <p className="text-gray-700 text-sm">{exp.description}</p>
+                <div className="text-gray-700 text-sm whitespace-pre-line">
+                  {exp.description.split('\n').map((line, i) => {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-')) {
+                      return <div key={i} className="ml-2">{trimmedLine}</div>;
+                    }
+                    return trimmedLine ? <div key={i}>{trimmedLine}</div> : null;
+                  })}
+                </div>
                 {exp.achievements && exp.achievements.length > 0 && (
                   <ul className="list-disc list-inside mt-2 space-y-1 text-sm text-gray-700">
                     {exp.achievements.map((achievement, achIndex) => (
@@ -260,31 +275,48 @@ export default function ResumePreview({ data, templateSettings }: ResumePreviewP
             {projects.map((project, index) => (
               <div key={index}>
                 <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-semibold" style={{ color: colors.text }}>
-                    {project.name}
-                  </h3>
-                  <div className="flex gap-2 text-sm">
-                    {project.url && (
-                      <a 
-                        href={project.url} 
-                        className="hover:underline"
-                        style={{ color: colors.primary }}
-                      >
-                        Demo
-                      </a>
-                    )}
-                    {project.github && (
-                      <a 
-                        href={project.github} 
-                        className="hover:underline"
-                        style={{ color: colors.primary }}
-                      >
-                        GitHub
-                      </a>
-                    )}
+                  <div className="flex-1">
+                    <h3 className="font-semibold" style={{ color: colors.text }}>
+                      {project.name}
+                    </h3>
+                    <div className="flex gap-2 text-sm mt-1">
+                      {project.url && (
+                        <a 
+                          href={project.url} 
+                          className="hover:underline"
+                          style={{ color: colors.primary }}
+                        >
+                          Demo
+                        </a>
+                      )}
+                      {project.github && (
+                        <a 
+                          href={project.github} 
+                          className="hover:underline"
+                          style={{ color: colors.primary }}
+                        >
+                          GitHub
+                        </a>
+                      )}
+                    </div>
                   </div>
+                  {(project.startDate || project.endDate) && (
+                    <div className="text-right text-sm text-gray-600">
+                      <p>
+                        {project.startDate ? formatDate(project.startDate) : ''}{project.startDate && project.endDate ? ' - ' : project.startDate ? ' - Present' : ''}{project.endDate ? formatDate(project.endDate) : ''}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-gray-700 text-sm mb-1">{project.description}</p>
+                <div className="text-gray-700 text-sm mb-1 whitespace-pre-line">
+                  {project.description.split('\n').map((line, i) => {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-')) {
+                      return <div key={i} className="ml-2">{trimmedLine}</div>;
+                    }
+                    return trimmedLine ? <div key={i}>{trimmedLine}</div> : null;
+                  })}
+                </div>
                 {project.technologies && project.technologies.length > 0 && (
                   <p className="text-gray-700 text-sm">
                     <span className="font-bold">Tech stack: </span>

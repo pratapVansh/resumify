@@ -1,19 +1,31 @@
-import { Control, UseFormRegister, FieldErrors, useFieldArray } from 'react-hook-form';
+import { Control, UseFormRegister, FieldErrors, useFieldArray, useWatch } from 'react-hook-form';
 import { ResumeFormData } from '@/types';
 import { Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import AIEnhanceButton from '@/components/common/AIEnhanceButton';
+import { generateExperienceBullets } from '@/services/aiService';
 
 interface ExperienceSectionProps {
   control: Control<ResumeFormData>;
   register: UseFormRegister<ResumeFormData>;
   errors: FieldErrors<ResumeFormData>;
+  setValue: (name: any, value: any) => void;
 }
 
 export default function ExperienceSection({
   control,
   register,
   errors,
+  setValue,
 }: ExperienceSectionProps) {
   const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'experience',
+  });
+  const [enhancingIndex, setEnhancingIndex] = useState<number | null>(null);
+  
+  // Watch all experience entries to get current values
+  const experienceValues = useWatch({
     control,
     name: 'experience',
   });
@@ -29,6 +41,46 @@ export default function ExperienceSection({
       description: '',
       achievements: [],
     });
+  };
+
+  const handleEnhanceDescription = async (index: number) => {
+    setEnhancingIndex(index);
+    try {
+      // Get current values from the form, not from the initial fields
+      const experience = experienceValues?.[index];
+      
+      if (!experience?.position || !experience?.company) {
+        alert('Please fill in position and company before enhancing.');
+        setEnhancingIndex(null);
+        return;
+      }
+
+      const description = experience?.description?.trim() || '';
+      if (!description || description.length < 10) {
+        alert('Please write at least 10 characters in the description before enhancing.');
+        setEnhancingIndex(null);
+        return;
+      }
+
+      console.log('Sending to AI:', { position: experience.position, company: experience.company, description });
+      
+      const bullets = await generateExperienceBullets(
+        String(experience.position),
+        String(experience.company),
+        String(description),
+        3
+      );
+
+      // Join bullets into a description
+      const enhancedDescription = bullets.map(bullet => `• ${bullet}`).join('\n');
+      setValue(`experience.${index}.description`, enhancedDescription);
+    } catch (error: any) {
+      console.error('AI Enhancement Error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to enhance description with AI';
+      alert(errorMessage);
+    } finally {
+      setEnhancingIndex(null);
+    }
   };
 
   return (
@@ -126,9 +178,16 @@ export default function ExperienceSection({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description *
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Description *
+              </label>
+              <AIEnhanceButton
+                onEnhance={() => handleEnhanceDescription(index)}
+                label="Enhance"
+                disabled={enhancingIndex !== null}
+              />
+            </div>
             <textarea
               {...register(`experience.${index}.description`)}
               rows={4}

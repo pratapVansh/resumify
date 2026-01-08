@@ -2,6 +2,8 @@ import { Control, UseFormRegister, UseFormSetValue, FieldErrors, useFieldArray, 
 import { ResumeFormData } from '@/types';
 import { Plus, Trash2, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import AIEnhanceButton from '@/components/common/AIEnhanceButton';
+import { improveProjectDescription } from '@/services/aiService';
 
 interface ProjectsSectionProps {
   control: Control<ResumeFormData>;
@@ -67,6 +69,7 @@ interface ProjectItemProps {
 function ProjectItem({ index, register, control, setValue, errors, onRemove }: ProjectItemProps) {
   // Local state for the input field only (not the actual array)
   const [techInput, setTechInput] = useState('');
+  const [isEnhancing, setIsEnhancing] = useState(false);
   
   // Watch the current technologies array from react-hook-form
   const technologies = useWatch({
@@ -74,6 +77,19 @@ function ProjectItem({ index, register, control, setValue, errors, onRemove }: P
     name: `projects.${index}.technologies`,
     defaultValue: [],
   }) || [];
+
+  // Watch project name and description for AI enhancement
+  const projectName = useWatch({
+    control,
+    name: `projects.${index}.name`,
+    defaultValue: '',
+  });
+
+  const projectDescription = useWatch({
+    control,
+    name: `projects.${index}.description`,
+    defaultValue: '',
+  });
 
   // Initialize technologies array if it doesn't exist
   useEffect(() => {
@@ -95,6 +111,42 @@ function ProjectItem({ index, register, control, setValue, errors, onRemove }: P
   const removeTechnology = (techIndex: number) => {
     const newTechnologies = technologies.filter((_, i) => i !== techIndex);
     setValue(`projects.${index}.technologies`, newTechnologies);
+  };
+
+  const handleEnhanceDescription = async () => {
+    setIsEnhancing(true);
+    try {
+      const name = projectName?.trim() || '';
+      const description = projectDescription?.trim() || '';
+      
+      if (!name || !description || technologies.length === 0) {
+        alert('Please fill in project name, description, and at least one technology before enhancing.');
+        setIsEnhancing(false);
+        return;
+      }
+
+      if (description.length < 10) {
+        alert('Please write at least 10 characters in the description before enhancing.');
+        setIsEnhancing(false);
+        return;
+      }
+
+      console.log('Sending to AI:', { name, description, technologies });
+      
+      const enhancedDescription = await improveProjectDescription(
+        String(name),
+        String(description),
+        technologies
+      );
+
+      setValue(`projects.${index}.description`, enhancedDescription);
+    } catch (error: any) {
+      console.error('AI Enhancement Error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to enhance description with AI';
+      alert(errorMessage);
+    } finally {
+      setIsEnhancing(false);
+    }
   };
 
   return (
@@ -120,7 +172,14 @@ function ProjectItem({ index, register, control, setValue, errors, onRemove }: P
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-sm font-medium text-gray-700">Description *</label>
+          <AIEnhanceButton
+            onEnhance={handleEnhanceDescription}
+            label="Enhance"
+            disabled={isEnhancing}
+          />
+        </div>
         <textarea
           {...register(`projects.${index}.description`)}
           rows={3}
