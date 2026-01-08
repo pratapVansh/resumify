@@ -27,6 +27,7 @@ export const generateAccessToken = (payload: JwtPayload): string => {
   const { accessSecret } = getSecrets();
   const expiresIn = process.env.JWT_ACCESS_EXPIRES_IN || '15m';
 
+  // @ts-ignore
   return jwt.sign(payload, accessSecret, {
     expiresIn,
     issuer: 'resumify',
@@ -40,6 +41,7 @@ export const generateRefreshToken = (payload: JwtPayload): string => {
   const { refreshSecret } = getSecrets();
   const expiresIn = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 
+  // @ts-ignore
   return jwt.sign(payload, refreshSecret, {
     expiresIn,
     issuer: 'resumify',

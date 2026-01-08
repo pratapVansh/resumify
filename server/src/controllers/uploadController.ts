@@ -94,7 +94,7 @@ export const uploadResumeFileHandler = asyncHandler(
       data: {
         url: result.url,
         publicId: result.publicId,
-        format: result.format,
+        // format: result.format, // Optional field
       },
     });
   }

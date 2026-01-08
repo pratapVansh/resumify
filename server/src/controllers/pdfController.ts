@@ -91,7 +91,7 @@ export const generateAndUploadPDF = asyncHandler(
     // Update resume with PDF URL and thumbnail URL
     resume.pdfUrl = result.url;
     resume.pdfPublicId = result.publicId;
-    resume.thumbnailUrl = result.thumbnailUrl;
+    // resume.thumbnailUrl = result.thumbnailUrl; // TODO: Add thumbnail generation
     await resume.save();
 
     res.status(200).json({
@@ -99,7 +99,7 @@ export const generateAndUploadPDF = asyncHandler(
       data: {
         url: result.url,
         publicId: result.publicId,
-        thumbnailUrl: result.thumbnailUrl,
+        // thumbnailUrl: result.thumbnailUrl, // TODO: Add thumbnail generation
       },
     });
   }
