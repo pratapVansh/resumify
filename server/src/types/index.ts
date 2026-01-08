@@ -2,19 +2,24 @@
  * Type definitions for the application
  */
 
-import { Request } from 'express';
+import { Request, Response, NextFunction } from 'express';
 
 /**
  * Extend Express Request interface to include authenticated user
+ * This interface properly inherits all Express Request properties
  */
-export interface AuthRequest extends Request {
+export interface AuthRequest<
+  P = any,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = any,
+  Locals extends Record<string, any> = Record<string, any>
+> extends Request<P, ResBody, ReqBody, ReqQuery, Locals> {
   user?: {
     id: string;
     email: string;
     role?: string;
   };
-  file?: Express.Multer.File;
-  files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] };
 }
 
 /**
