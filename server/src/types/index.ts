@@ -3,23 +3,26 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
 
 /**
  * Extend Express Request interface to include authenticated user
- * This interface properly inherits all Express Request properties
+ * Explicitly includes all Express Request properties to ensure TypeScript recognizes them
  */
-export interface AuthRequest<
-  P = any,
-  ResBody = any,
-  ReqBody = any,
-  ReqQuery = any,
-  Locals extends Record<string, any> = Record<string, any>
-> extends Request<P, ResBody, ReqBody, ReqQuery, Locals> {
+export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
     role?: string;
   };
+  // Explicitly declare Express properties to ensure they're recognized
+  body: any;
+  params: ParamsDictionary;
+  query: any;
+  headers: any;
+  cookies: any;
+  file?: Express.Multer.File;
+  files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] };
 }
 
 /**
