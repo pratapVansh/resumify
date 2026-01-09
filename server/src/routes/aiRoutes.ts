@@ -1,14 +1,14 @@
 import express from 'express';
-import * as aiController from '../controllers/aiController';
-import { protect } from '../middleware/authMiddleware';
-import { validate } from '../middleware/validation';
+import * as aiController from '../controllers/aiController.js';
+import { protect } from '../middleware/authMiddleware.js';
+import { validate } from '../middleware/validation.js';
 import {
   validateEnhanceSummary,
   validateGenerateExperienceBullets,
   validateImproveProjectDescription,
   validateEnhanceResumeContent,
   validateSuggestSkills,
-} from '../middleware/aiValidation';
+} from '../middleware/aiValidation.js';
 
 const router = express.Router();
 
