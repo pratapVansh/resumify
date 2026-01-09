@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { asyncHandler } from '../utils/asyncHandler';
-import * as aiService from '../services/aiService';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import * as aiService from '../services/aiService.js';
 
 /**
  * @route   POST /api/ai/enhance-summary
